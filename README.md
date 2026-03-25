@@ -141,28 +141,27 @@ Launch the web management dashboard.
 ansibleclaw ui [--port PORT]
 ```
 
-Starts at `http://localhost:8600` by default. Requires `uv pip install -e ".[ui]"`.
+Starts at `http://localhost:8600` by default. Requires `pip install "ansible-claw[ui]"`.
 
 ## Web Dashboard
 
 Start with `ansibleclaw ui` and open `http://localhost:8600`.
 
-**Skills Library** (`/skills`) -- View all installed skills, click to read SKILL.md content, download as ZIP, delete generated skills, or install to Cursor/Claude with one click.
+**Skills Library** (`/skills`) -- View all skills (built-in + generated), click to read SKILL.md content, download as ZIP, delete generated skills, or install to Cursor/Claude with one click.
 
 **Module Search** (`/search`) -- Search Ansible modules by keyword and namespace. View module parameters and examples inline. Jump to the generator from any result.
 
 **Skill Generator** (`/generate`) -- Enter a module name, preview the generated SKILL.md in real time, choose a target (project / Cursor / Claude / custom path), and generate a full skill package. Download as ZIP from the success message.
 
-**Inventory Manager** (`/inventory`) -- Edit `inventory/hosts.yml` directly in the browser with YAML validation on save.
-
 ## Built-In Skills
+
+These ship inside the `ansible-claw` package and are always available -- no repo checkout needed.
 
 | Skill | Purpose | Runtime Dependency |
 |-------|---------|-------------------|
 | `ansible_manager` | Teaches AI to run any Ansible module via `ansible` CLI | `ansible-core` |
 | `ansible_search` | Teaches AI to discover modules via `ansible-doc` | `ansible-core` |
 | `ansible_skills_factory` | Teaches AI to generate new skills on-demand | `ansibleclaw` |
-| `ansible_package` | OOTB showcase: OS-agnostic package management | `ansible-core` |
 
 ## Dependencies
 
@@ -177,10 +176,7 @@ Start with `ansibleclaw ui` and open `http://localhost:8600`.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `ANSIBLECLAW_SKILLS_DIR` | `<project>/skills/` | Where generated skills are written |
-| `ANSIBLECLAW_INVENTORY` | `<project>/inventory/hosts.yml` | Ansible inventory file path |
-
-The project's `ansible.cfg` automatically sets inventory to `inventory/hosts.yml` and enables JSON output for all `ansible` commands run from the project directory.
+| `ANSIBLECLAW_SKILLS_DIR` | `./skills/` (CWD) | Where generated skills are written |
 
 ## Project Structure
 
@@ -192,6 +188,10 @@ AnsibleClaw/
 │   ├── core/
 │   │   ├── parser.py          # ansible-doc scraping + extraction
 │   │   └── packager.py        # ZIP packaging for skill distribution
+│   ├── builtins/              # Built-in skills (shipped in wheel)
+│   │   ├── ansible_manager/   # General-purpose Ansible executor
+│   │   ├── ansible_search/    # Module discovery via ansible-doc
+│   │   └── ansible_skills_factory/  # On-demand skill generation
 │   ├── templates/             # Jinja2 skill blueprints (shipped in wheel)
 │   │   ├── skill_template.md  # SKILL.md template
 │   │   ├── run.sh.j2          # Wrapper script template
@@ -201,18 +201,10 @@ AnsibleClaw/
 │       ├── app.py             # Routes (including ZIP download)
 │       ├── templates/         # Jinja2 HTML templates (Pico CSS)
 │       └── static/            # CSS (dark/light themes)
-├── skills/                    # All skills (built-in + generated)
-│   ├── ansible_manager/       # General-purpose Ansible executor
-│   ├── ansible_search/        # Module discovery via ansible-doc
-│   ├── ansible_skills_factory/# On-demand skill generation
-│   └── ansible_package/       # OOTB showcase (generated)
-├── inventory/                 # Ansible inventory
-│   ├── hosts.yml              # Host definitions
-│   └── group_vars/all.yml     # Default connection variables
+├── skills/                    # Generated skills (user output, CWD-based)
 ├── tests/                     # Test suite
 ├── docs/                      # Documentation
 │   └── user-guide.md          # Comprehensive user guide
-├── ansible.cfg                # Ansible defaults (inventory + JSON output)
 ├── pyproject.toml             # Package definition (ansible-claw on PyPI)
 └── README.md
 ```

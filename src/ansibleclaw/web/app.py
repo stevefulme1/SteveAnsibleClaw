@@ -1,7 +1,7 @@
 """AnsibleClaw Web Dashboard.
 
 FastAPI application with routes for skills management, module search,
-skill generation with preview, inventory management, and ZIP download.
+skill generation with preview, and ZIP download.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from ansibleclaw.config import INSTALL_PATHS, INVENTORY_PATH, SKILLS_DIR, TEMPLATE_DIR, TEMPLATE_PATH
+from ansibleclaw.config import BUILTINS_DIR, INSTALL_PATHS, SKILLS_DIR, TEMPLATE_DIR, TEMPLATE_PATH
 from ansibleclaw.core.packager import package_skill_zip_bytes
 from ansibleclaw.core.parser import (
     AnsibleDocError,
@@ -48,25 +48,45 @@ def _read_skill_frontmatter(skill_dir: Path) -> dict:
     return {"name": skill_dir.name, "description": ""}
 
 
-def _list_skills() -> list[dict]:
-    """List all skills with their metadata."""
-    skills = []
-    if not SKILLS_DIR.exists():
-        return skills
-    for d in sorted(SKILLS_DIR.iterdir()):
+def _scan_skill_dirs(base: Path, skill_type: str) -> dict[str, dict]:
+    """Scan a directory for skill subdirectories and return {name: info}."""
+    results: dict[str, dict] = {}
+    if not base.exists():
+        return results
+    for d in sorted(base.iterdir()):
         if d.is_dir() and (d / "SKILL.md").exists():
             fm = _read_skill_frontmatter(d)
-            builtin = d.name in (
-                "ansible_manager", "ansible_search", "ansible_skills_factory"
-            )
-            skills.append({
+            results[d.name] = {
                 "dir_name": d.name,
                 "name": fm.get("name", d.name),
                 "description": fm.get("description", ""),
-                "type": "built-in" if builtin else "generated",
+                "type": skill_type,
                 "path": str(d),
-            })
-    return skills
+            }
+    return results
+
+
+def _list_skills() -> list[dict]:
+    """List all skills from builtins and user SKILLS_DIR (user overrides builtins)."""
+    merged = _scan_skill_dirs(BUILTINS_DIR, "built-in")
+    merged.update(_scan_skill_dirs(SKILLS_DIR, "generated"))
+    return list(merged.values())
+
+
+def _resolve_skill_dir(name: str) -> Path | None:
+    """Find a skill directory by name, checking SKILLS_DIR first then BUILTINS_DIR."""
+    user_dir = SKILLS_DIR / name
+    if user_dir.exists() and (user_dir / "SKILL.md").exists():
+        return user_dir
+    builtin_dir = BUILTINS_DIR / name
+    if builtin_dir.exists() and (builtin_dir / "SKILL.md").exists():
+        return builtin_dir
+    return None
+
+
+def _is_builtin(name: str) -> bool:
+    """Check whether a skill lives in the builtins directory."""
+    return (BUILTINS_DIR / name / "SKILL.md").exists()
 
 
 def _render_skill_md(metadata: dict) -> str:
@@ -112,10 +132,10 @@ async def skills_page(request: Request):
 
 @app.get("/skills/{name}", response_class=HTMLResponse)
 async def skill_detail(request: Request, name: str):
-    skill_file = SKILLS_DIR / name / "SKILL.md"
-    if not skill_file.exists():
+    skill_dir = _resolve_skill_dir(name)
+    if skill_dir is None:
         return HTMLResponse("Skill not found", status_code=404)
-    content = skill_file.read_text()
+    content = (skill_dir / "SKILL.md").read_text()
     return TEMPLATES.TemplateResponse(request, "skill_detail.html", {
         "name": name,
         "content": content,
@@ -125,19 +145,19 @@ async def skill_detail(request: Request, name: str):
 
 @app.delete("/skills/{name}", response_class=HTMLResponse)
 async def delete_skill(name: str):
+    if _is_builtin(name):
+        return HTMLResponse("Cannot delete built-in skills", status_code=400)
     skill_dir = SKILLS_DIR / name
     if not skill_dir.exists():
         return HTMLResponse("Skill not found", status_code=404)
-    if name in ("ansible_manager", "ansible_search", "ansible_skills_factory"):
-        return HTMLResponse("Cannot delete built-in skills", status_code=400)
     shutil.rmtree(skill_dir)
     return HTMLResponse("")
 
 
 @app.post("/skills/{name}/install", response_class=HTMLResponse)
 async def install_skill(name: str, platform: str = Form(...)):
-    skill_dir = SKILLS_DIR / name
-    if not skill_dir.exists():
+    skill_dir = _resolve_skill_dir(name)
+    if skill_dir is None:
         return HTMLResponse("Skill not found", status_code=404)
     platform = platform.lower()
     if platform not in INSTALL_PATHS:
@@ -153,8 +173,8 @@ async def install_skill(name: str, platform: str = Form(...)):
 
 @app.get("/skills/{name}/download")
 async def download_skill(name: str):
-    skill_dir = SKILLS_DIR / name
-    if not skill_dir.exists():
+    skill_dir = _resolve_skill_dir(name)
+    if skill_dir is None:
         return HTMLResponse("Skill not found", status_code=404)
     zip_bytes = package_skill_zip_bytes(skill_dir)
     return Response(
@@ -260,24 +280,3 @@ async def generate_skill(
     )
 
 
-@app.get("/inventory", response_class=HTMLResponse)
-async def inventory_page(request: Request):
-    content = ""
-    if INVENTORY_PATH.exists():
-        content = INVENTORY_PATH.read_text()
-    return TEMPLATES.TemplateResponse(request, "inventory.html", {
-        "content": content,
-        "page": "inventory",
-        "path": str(INVENTORY_PATH),
-    })
-
-
-@app.put("/inventory", response_class=HTMLResponse)
-async def save_inventory(content: str = Form(...)):
-    try:
-        yaml.safe_load(content)
-    except yaml.YAMLError as exc:
-        return HTMLResponse(f'<p class="error">Invalid YAML: {exc}</p>', status_code=400)
-    INVENTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    INVENTORY_PATH.write_text(content)
-    return HTMLResponse('<span class="success">Inventory saved.</span>')

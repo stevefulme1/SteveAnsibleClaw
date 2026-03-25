@@ -45,12 +45,6 @@ def test_generate_page(web_client):
     assert "Module Name" in resp.text
 
 
-def test_inventory_page(web_client):
-    resp = web_client.get("/inventory")
-    assert resp.status_code == 200
-    assert "localhost" in resp.text
-
-
 def test_cannot_delete_builtin_skill(web_client):
     resp = web_client.delete("/skills/ansible_manager")
     assert resp.status_code == 400
@@ -61,9 +55,3 @@ def test_root_redirects_to_skills(web_client):
     resp = web_client.get("/", follow_redirects=False)
     assert resp.status_code == 307
     assert "/skills" in resp.headers["location"]
-
-
-def test_save_invalid_yaml_inventory(web_client):
-    resp = web_client.put("/inventory", data={"content": "{{not valid yaml"})
-    assert resp.status_code == 400
-    assert "Invalid YAML" in resp.text

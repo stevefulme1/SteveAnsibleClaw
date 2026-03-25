@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ansible-claw"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A skill generation framework that converts Ansible modules into portable AI agent skills."
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -40,6 +40,9 @@ ansibleclaw = "ansibleclaw.cli:main"
 [project.optional-dependencies]
 ui = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 dev = ["pytest>=7.0"]
+
+[tool.hatch.version]
+path = "src/ansibleclaw/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ansibleclaw"]
