@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AnsibleClaw{% block title_suffix %}{% endblock %}</title>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('ansibleclaw-theme');
+            if (saved === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else if (saved === 'dark') {
+                // dark is default (no attribute needed)
+            } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style>:root { --pico-font-size: 16px; }</style>
+</head>
+<body>
+    <nav class="container">
+        <ul>
+            <li>
+                <a href="/skills" class="nav-brand">
+                    <img src="/static/logo.png" alt="AnsibleClaw" class="nav-logo">
+                    <strong>AnsibleClaw</strong>
+                </a>
+            </li>
+        </ul>
+        <ul>
+            <li><a href="/skills" {% if page == "skills" %}aria-current="page"{% endif %}>Skills</a></li>
+            <li><a href="/search" {% if page == "search" %}aria-current="page"{% endif %}>Search</a></li>
+            <li><a href="/generate" {% if page == "generate" %}aria-current="page"{% endif %}>Generate</a></li>
+            <li><a href="/inventory" {% if page == "inventory" %}aria-current="page"{% endif %}>Inventory</a></li>
+            <li>
+                <button id="theme-toggle" class="theme-toggle-btn" type="button" title="Toggle theme">
+                    <span class="theme-icon"></span>
+                    <span class="theme-label"></span>
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <small>AnsibleClaw &mdash; Ansible skill generation for AI agents</small>
+    </footer>
+
+    <script>
+    (function() {
+        var btn = document.getElementById('theme-toggle');
+        var icon = btn.querySelector('.theme-icon');
+        var label = btn.querySelector('.theme-label');
+
+        function getTheme() {
+            return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        }
+
+        function applyUI(theme) {
+            if (theme === 'light') {
+                icon.textContent = '\u25D1';
+                label.textContent = 'Light';
+            } else {
+                icon.textContent = '\u25D0';
+                label.textContent = 'Dark';
+            }
+        }
+
+        function toggle() {
+            var current = getTheme();
+            var next = current === 'dark' ? 'light' : 'dark';
+            if (next === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('ansibleclaw-theme', next);
+            applyUI(next);
+        }
+
+        applyUI(getTheme());
+        btn.addEventListener('click', toggle);
+    })();
+    </script>
+</body>
+</html>

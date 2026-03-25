@@ -1,0 +1,32 @@
+<table>
+    <thead>
+        <tr>
+            <th>Module</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, desc in results.items() | sort %}
+        <tr>
+            <td><code>{{ name }}</code></td>
+            <td>{{ desc or "" }}</td>
+            <td>
+                <button
+                    class="outline"
+                    hx-get="/search/detail/{{ name }}"
+                    hx-target="#module-detail"
+                    hx-swap="innerHTML"
+                    style="padding: 0.25rem 0.75rem; font-size: 0.8rem; margin-right: 0.25rem;">
+                    Details
+                </button>
+                <a href="/generate?module={{ name }}" role="button" class="secondary outline"
+                   style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+                    Generate Skill
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p><small>{{ results | length }} module(s) found.</small></p>

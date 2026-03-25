@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ansible-claw"
+version = "0.1.0"
+description = "A skill generation framework that converts Ansible modules into portable AI agent skills."
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{name = "micytao"}]
+readme = "README.md"
+keywords = ["ansible", "ai", "agent", "skills", "cursor", "claude"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "ansible-core>=2.15",
+    "jinja2>=3.1",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/micytao/AnsibleClaw"
+Repository = "https://github.com/micytao/AnsibleClaw"
+Issues = "https://github.com/micytao/AnsibleClaw/issues"
+
+[project.scripts]
+ansibleclaw = "ansibleclaw.cli:main"
+
+[project.optional-dependencies]
+ui = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+dev = ["pytest>=7.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ansibleclaw"]
